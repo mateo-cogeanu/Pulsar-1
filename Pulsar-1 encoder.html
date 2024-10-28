@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSTV-like Text Encoder</title>
+</head>
+<body>
+    <h2>Text to SSTV-like Tone Encoder</h2>
+    <input type="text" id="inputText" placeholder="Enter text here" />
+    <button onclick="playTone()">Encode & Play</button>
+
+    <script>
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const baseFrequency = 300; // Starting frequency for 'a'
+        const frequencyStep = 500; // Frequency difference between each letter
+        const spaceFrequency = 2000; // Frequency for space
+        const duration = 500; // Duration of each tone in milliseconds
+
+        function playTone() {
+            const text = document.getElementById('inputText').value.toLowerCase();
+            const frequencies = [];
+
+            for (let char of text) {
+                if (char === ' ') {
+                    frequencies.push(spaceFrequency); // Space character tone
+                } else {
+                    const charIndex = char.charCodeAt(0) - 'a'.charCodeAt(0);
+                    if (charIndex >= 0 && charIndex < 26) {
+                        const frequency = baseFrequency + (charIndex * frequencyStep);
+                        frequencies.push(frequency);
+                    }
+                }
+            }
+
+            playFrequencies(frequencies);
+        }
+
+        function playFrequencies(frequencies) {
+            let currentTime = audioContext.currentTime;
+
+            for (let freq of frequencies) {
+                const oscillator = audioContext.createOscillator();
+                oscillator.frequency.setValueAtTime(freq, currentTime);
+                oscillator.connect(audioContext.destination);
+                oscillator.start(currentTime);
+                oscillator.stop(currentTime + duration / 1000); // Duration in seconds
+                currentTime += duration / 1000 + 0.1; // Space between tones
+            }
+        }
+    </script>
+</body>
+</html>

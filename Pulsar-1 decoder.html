@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SSTV-like Text Decoder</title>
+</head>
+<body>
+    <h2>Decoded Message</h2>
+    <p id="decodedText">Listening...</p>
+    <button onclick="startDecoding()">Start Listening</button>
+
+    <script>
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let decodedMessage = "";
+        const baseFrequency = 300; // Starting frequency for 'a'
+        const frequencyStep = 500; // Frequency difference between each letter
+        const spaceFrequency = 2000; // Frequency for space
+        const noiseThreshold = 50; // Base threshold for noise filtering
+        const alphabet = "abcdefghijklmnopqrstuvwxyz ";
+        let lastDetectedChar = '';
+        let debounceCount = 0;
+
+        async function startDecoding() {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const microphone = audioContext.createMediaStreamSource(stream);
+            const analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            microphone.connect(analyser);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const amplitudeHistory = new Float32Array(5); // Store last 5 amplitudes for averaging
+
+            function decodeTone() {
+                analyser.getByteFrequencyData(dataArray);
+
+                // Calculate average amplitude for noise reduction
+                let sumAmplitude = 0;
+                for (let i = 0; i < amplitudeHistory.length; i++) {
+                    sumAmplitude += amplitudeHistory[i];
+                }
+                const averageAmplitude = sumAmplitude / amplitudeHistory.length;
+
+                // Update the amplitude history
+                amplitudeHistory.copyWithin(1);
+                amplitudeHistory[0] = Math.max(...dataArray);
+
+                // Find the frequency with the highest amplitude
+                let highestIndex = -1;
+                let maxAmplitude = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                    if (dataArray[i] > maxAmplitude) {
+                        maxAmplitude = dataArray[i];
+                        highestIndex = i;
+                    }
+                }
+
+                // Calculate the effective threshold
+                const effectiveThreshold = noiseThreshold + averageAmplitude * 0.5; // Adjust threshold based on average amplitude
+
+                // Check if the maximum amplitude exceeds the effective threshold
+                if (maxAmplitude > effectiveThreshold) {
+                    const detectedFrequency = highestIndex * (audioContext.sampleRate / analyser.fftSize);
+                    const charIndex = Math.round((detectedFrequency - baseFrequency) / frequencyStep);
+                    
+                    // Detect the space frequency
+                    if (Math.abs(detectedFrequency - spaceFrequency) < 50) {
+                        decodedMessage += ' '; // Add space to the message
+                        document.getElementById("decodedText").textContent = decodedMessage;
+                    } else if (charIndex >= 0 && charIndex < alphabet.length) {
+                        const detectedChar = alphabet[charIndex];
+
+                        // Debounce detection of characters
+                        if (detectedChar !== lastDetectedChar) {
+                            debounceCount++;
+                            if (debounceCount > 5) { // Only confirm after several frames
+                                decodedMessage += detectedChar;
+                                document.getElementById("decodedText").textContent = decodedMessage;
+                                lastDetectedChar = detectedChar; // Update last detected character
+                                debounceCount = 0; // Reset debounce count
+                            }
+                        }
+                    }
+                } else {
+                    lastDetectedChar = ''; // Reset when noise is detected
+                    debounceCount = 0; // Reset debounce count
+                }
+
+                requestAnimationFrame(decodeTone);
+            }
+            decodeTone();
+        }
+    </script>
+</body>
+</html>
