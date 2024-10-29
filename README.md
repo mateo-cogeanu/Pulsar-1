@@ -4,6 +4,9 @@ decoder: https://htmlpreview.github.io/?https://github.com/mateo-cogeanu/Pulsar-
 
 
 CHANGELOG:
-version 1: encodes and decodes letters.
-version 2: encodes and decodes letters and spaces.
-version 3: encodes and decodes letters, spaces and dots and commas.
+version 1: 
+encodes and decodes letters.
+version 2:
+encodes and decodes letters and spaces.
+version 3:
+encodes and decodes letters, spaces and dots and commas.
