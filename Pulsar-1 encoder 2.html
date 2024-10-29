@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Pulsar-1 Text Encoder</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #282c34;
+            color: #ffffff;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            max-width: 400px;
+            width: 100%;
+            border-radius: 8px;
+            background-color: #3b3f47;
+            box-sizing: border-box;
+        }
+        input[type="text"] {
+            width: 90%;
+            padding: 12px;
+            margin-top: 8px;
+            font-size: 16px;
+            border-radius: 4px;
+            border: none;
+            text-align: center;
+            background-color: #21252b;
+            color: #61dafb;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 12px;
+            padding: 12px 20px;
+            font-size: 16px;
+            color: #ffffff;
+            background-color: #61dafb;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #21a1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Pulsar-1 Text Encoder</h2>
+        <input type="text" id="inputText" placeholder="Enter your message here..." />
+        <button onclick="playTone()">Encode & Play</button>
+    </div>
+
+    <script>
+        let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const baseFrequency = 300;
+        const frequencyStep = 500;
+        const spaceFrequency = 2000;
+        const duration = 500;
+
+        function playTone() {
+            const text = document.getElementById('inputText').value.toLowerCase();
+            const frequencies = [];
+
+            for (let char of text) {
+                if (char === ' ') {
+                    frequencies.push(spaceFrequency);
+                } else {
+                    const charIndex = char.charCodeAt(0) - 'a'.charCodeAt(0);
+                    if (charIndex >= 0 && charIndex < 26) {
+                        const frequency = baseFrequency + (charIndex * frequencyStep);
+                        frequencies.push(frequency);
+                    }
+                }
+            }
+
+            playFrequencies(frequencies);
+        }
+
+        function playFrequencies(frequencies) {
+            let currentTime = audioContext.currentTime;
+
+            for (let freq of frequencies) {
+                const oscillator = audioContext.createOscillator();
+                oscillator.frequency.setValueAtTime(freq, currentTime);
+                oscillator.connect(audioContext.destination);
+                oscillator.start(currentTime);
+                oscillator.stop(currentTime + duration / 1000);
+                currentTime += duration / 1000 + 0.1;
+            }
+        }
+    </script>
+</body>
+</html>
